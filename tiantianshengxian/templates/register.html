@@ -32,6 +32,7 @@
                         <input type="text" name="user_name" id="user_name">
                         <span class="error_tip">提示信息</span>
 
+
                     </li>
                     <li>
                         <label>密码:</label>
@@ -62,6 +63,7 @@
         </div>
 
     </div>
+    <div><span id="user_msg" style="float: left;padding-top: 90px"></span></div>
 
 </div>
 
@@ -85,14 +87,15 @@
 
     user_name.onblur = function () {
         /*获取XML的对象，可以发送异步请求*/
-        my_ajax('/checkusername?username=' + user_name.value, function (data) {
+        my_ajax('/checkusername?user_name=' + user_name.value, function (data) {
             if (data == '1') {
-                document.getElementById('user_name').innerText = '用户名存在'
+                document.getElementById('user_msg').innerText = '用户名存在'
 
-            } else {
-                document.getElementById('user_name').innerText = '用户名可用'
+            } else if (data == '0') {
+                document.getElementById('user_msg').innerText = '用户名可用'
 
-            }
+            } else if (data == '3')
+                document.getElementById('user_msg').innerText = ''
         })
     }
 

@@ -971,8 +971,6 @@ html, body {
     background-position: 280px -95px;
 }
 
-
-
 .validate_code {
     width: 200px;
     height: 36px;
@@ -1044,7 +1042,7 @@ html, body {
 
 /* 注册页面 */
 .register_con {
-    width: 700px;
+    width: 850px;
     height: 560px;
     margin: 50px auto 0;
     background: url(../images/interval_line.png) 300px top no-repeat;
@@ -1082,6 +1080,7 @@ html, body {
 
 .r_con {
     width: 400px;
+    float: left;
 }
 
 .reg_title {
@@ -1810,6 +1809,12 @@ html, body {
 }
 
 .site_con {
+    background-color: #f9f9f9;
+    padding: 10px 0;
+    margin-bottom: 20px;
+}
+
+.site_sanji {
     background-color: #f9f9f9;
     padding: 10px 0;
     margin-bottom: 20px;

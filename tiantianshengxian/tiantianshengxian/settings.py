@@ -35,7 +35,9 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'user'
+    'user',
+    'goods',
+    'tinymce'
 )
 
 MIDDLEWARE_CLASSES = (
@@ -130,3 +132,19 @@ EMAIL_FROM = '正道<18790578092@163.com>'  # 收件人看到的发件人-
 
 # 配置URL
 LOGIN_URL = '/login'
+
+# 富文本编辑项配置
+TINYMCE_DEFAULT_CONFIG = {
+    'theme': 'advanced',
+    'width': 600,
+    'height': 400.
+}
+
+# FastDFS设置，自定义储存的类
+DEFAULT_FILE_STORAGE = 'my_fdfs.storage.FDFSStorage'
+
+# FastDFS设置，客户端配置文件
+FDFS_CLIENT_CONF = 'my_fdfs/client.conf'
+
+# 设置FastDFS的URL
+FDFS_URL = 'http://192.168.12.197:9999/'

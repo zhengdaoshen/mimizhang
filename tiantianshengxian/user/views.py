@@ -1,17 +1,18 @@
 from django.shortcuts import render, redirect
 import re
-from user.models import User
+from user.models import *
 from django.views.generic import View
 import random
 from PIL import Image, ImageDraw, ImageFont
-from django.http import HttpResponse, HttpResponseRedirect, response, cookie
+from django.http import HttpResponse, HttpResponseRedirect, response, cookie, JsonResponse
 from itsdangerous import TimedJSONWebSignatureSerializer as Serillizer, SignatureExpired, BadTimeSignature
 from django.core.mail import send_mail
 from  tiantianshengxian import settings
 from django.core.urlresolvers import reverse
+from django.core import serializers
 
 from db.tasks import task_send_mail
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from db.user_util import LoginRequiredMixin
 
 
@@ -163,6 +164,48 @@ class LoginView(View):
             print("用户名和密码不正确。")
 
             return render(request, 'login.html', {'errmsg': '账户未激活'})
+            # def post(self, request):
+            #     # 获取属性
+            #
+            #
+            #     validate = request.POST.get("validate_code", '').strip()
+            #     print(validate)
+            #     # 判断验证码
+            #     if validate != request.session.get('validate_code'):
+            #         print(request.session.get('validate_code'))
+            #         return HttpResponseRedirect(reverse("user:login"))
+            #
+            #     user_name = request.POST.get("user_name").strip()
+            #     user_pwd = request.POST.get("user_pwd").strip()
+            #     remember = request.POST.get("remember")
+            #
+            #     user = User.objects.filter(name=user_name, pwd=user_pwd)
+            #
+            #     # 查询
+            #     if len(user) != 0:
+            #         # 保存到ｓｅｓｓｉｏｎ
+            #         request.session['login_user_id'] = user[0].id
+            #
+            #         # 判断是否跳转到上一次的页面
+            #         url_dest = request.COOKIES.get("url_dest")
+            #         if url_dest:
+            #             resp = HttpResponseRedirect(url_dest)
+            #             resp.delete_cookie("url_dest")
+            #         else:
+            #             resp = HttpResponseRedirect(reverse("book:index"))
+            #
+            #         if remember == "1":
+            #             resp.set_cookie("remember_user_name", user_name, 3600 * 24 * 7)
+            #         else:
+            #             resp.set_cookie("remember_user_name", user_name, 0)
+            #         # 转发
+            #         # return book_views.index(request)
+            #
+            #         # 重定向
+            #         return render(request, 'index.html')
+            #
+            #     else:
+            #         return render(request, 'login.html')
 
 
 def validate_code(request):
@@ -210,27 +253,179 @@ def validate_code(request):
 
 
 class InfoView(LoginRequiredMixin, View):
+    # 用户中心信息
+
     def get(self, request):
-        context = {'page': '1'}
+        # 获取登录用户对应USER对象
+        user = request.user
+
+        # 获取用户的收货地址
+        try:
+            address = Address.objects.get(user=user, is_default=True)
+        except Address.DoesNotExist:
+            # 不存在默认收货地址
+            address = None
+        # 数据字典
+        context = {
+            'page': '1',
+            'address': address,
+
+        }
+
+        # 渲染
         return render(request, 'user_center_info.html', context)
 
 
 class OrderView(LoginRequiredMixin, View):
+    # 用户中心信息
+
     def get(self, request):
-        context = {'page': '2'}
+        # 获取登录用户对应USER对象
+        user = request.user
+
+        # 获取用户的收货地址
+        try:
+            address = Address.objects.get(user=user, is_default=True)
+        except Address.DoesNotExist:
+            # 不存在默认收货地址
+            address = None
+        # 数据字典
+        context = {
+            'page': '2',
+            'address': address,
+
+        }
+
+        # 渲染
         return render(request, 'user_center_order.html', context)
 
 
 class AddressView(LoginRequiredMixin, View):
+    # 用户中心信息
+
     def get(self, request):
-        context = {'page': '3'}
+        # 获取登录用户对应USER对象
+        user = request.user
+
+        # 获取用户的收货地址
+        try:
+            address = Address.objects.get(user=user, is_default=True)
+        except Address.DoesNotExist:
+            # 不存在默认收货地址
+            address = None
+        # 数据字典
+        context = {
+            'page': '3',
+            'address': address,
+
+        }
+
+        # 渲染
         return render(request, 'user_center_site.html', context)
+
+    def post(self, request):
+        # 地址添加
+        # 接收数据
+        receiver = request.POST.get('receiver')
+        print(receiver)
+        addr = request.POST.get('addr')
+        print(addr)
+        zip_code = request.POST.get('zip_code')
+        print(zip_code)
+        phone = request.POST.get('phone')
+        print(phone)
+
+        # 检验数据
+        if not all([receiver, addr, phone]):
+            return render(request, 'user_center_site.html', {'errmsg': '数据不完整'})
+
+        # # 校验手机号
+        # if not re.match(r'^1[3|4|5|7|8][0-9]$', phone):
+        #     return render(request, 'user_center_site.html', {'errmsg': '手机格式不正确'})
+
+        # 业务处理：地址添加
+        # 用户新添加的地址作为默认收货地址，如果原来有默认地址要取消
+        # 获取用户的默认收货地址
+
+        # 获取登录用户对应的USER对象
+
+        user = request.user
+        try:
+            address = Address.objects.get(user=user, is_default=True)
+        except:
+            # 不存在默认收货地址
+            pass
+
+        # 添加地址
+        Address.objects.create(
+            user=user,
+            receiver=receiver,
+            addr=addr,
+            zip_code=zip_code,
+            phone=phone,
+            is_default=True,
+        )
+
+        # 返回应答，刷新地址页面
+        return redirect(reverse('user:address'))  # get请求方式
 
 
 def checkusername(request):
     user_name = request.GET.get('user_name')
-    print(user_name)
-    if User.objects.filter(username=user_name).exists():
-        return HttpResponse('1')
+    if 20 >= len(user_name) >= 5:
+        if User.objects.filter(username=user_name).exists():
+            return HttpResponse('1')
+        else:
+            return HttpResponse('0')
     else:
-        return HttpResponse('0')
+        return HttpResponse('3')
+
+
+class LogoutView(View):
+    # def get(self, request):
+    #     logout(request)
+    #     return redirect(reverse('user:index'))
+
+    def get(self, request):
+        # 清除session
+        request.session.flush()
+        return redirect(reverse("user:index"))
+
+
+# 三级联动
+# 跳转到show.html
+def show(request):
+    return render(request, 'show.html')
+
+
+# 获取所有的省份,转成json
+def get_all_province(request):
+    province_list = Province.objects.all()
+    content = {
+        'province_list': serializers.serialize('json', province_list)
+    }
+
+    return JsonResponse(content)
+
+
+# 根据省份的id获取下面的城市,转成json
+def get_city_by_pid(request):
+    province_id = request.GET.get('province_id')
+    print(province_id)
+    city_list = City.objects.filter(fatherID=province_id)
+    content = {
+        'city_list': serializers.serialize('json', city_list)
+    }
+
+    return JsonResponse(content)
+
+
+# 根据城市的id获取下面的区,转成json
+def get_area_by_cid(request):
+    city_id = request.GET.get('city_id')
+    area_list = Area.objects.filter(fatherID=city_id)
+    content = {
+        'area_list': serializers.serialize('json', area_list)
+    }
+
+    return JsonResponse(content)
