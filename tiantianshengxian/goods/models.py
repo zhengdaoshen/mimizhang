@@ -25,7 +25,7 @@ class GoodSKU(BaseModel):
         (1, '上线')
     )
     type = models.ForeignKey('GoodType', verbose_name='商品种类')
-    goos = models.ForeignKey('Goods', verbose_name='商品SPU')
+    goods = models.ForeignKey('Goods', verbose_name='商品SPU')
     name = models.CharField(max_length=20, verbose_name='商品名称')
     desc = models.CharField(max_length=256, verbose_name='商品简介')
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='商品价格')

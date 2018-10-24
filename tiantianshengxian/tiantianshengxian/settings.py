@@ -148,3 +148,11 @@ FDFS_CLIENT_CONF = 'my_fdfs/client.conf'
 
 # 设置FastDFS的URL
 FDFS_URL = 'http://192.168.12.197:9999/'
+
+CACHES = {
+    "default": {
+        "BACKEND": 'redis_cache.cache.RedisCache',
+        "LOCATION": "redis://192.168.12.197:6379/5",
+        'TIMEOUT': 60,
+    },
+}

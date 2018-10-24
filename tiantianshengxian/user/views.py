@@ -14,6 +14,7 @@ from django.core import serializers
 from db.tasks import task_send_mail
 from django.contrib.auth import authenticate, login, logout
 from db.user_util import LoginRequiredMixin
+from redis import StrictRedis
 
 
 def index(request):
@@ -265,7 +266,11 @@ class InfoView(LoginRequiredMixin, View):
         except Address.DoesNotExist:
             # 不存在默认收货地址
             address = None
-        # 数据字典
+
+        # 读取历史记录
+        coon = StrictRedis('192.12.168.197')
+        history = coon.lrange('history_%d' % user.id, 0, -1)  # 数据字典
+
         context = {
             'page': '1',
             'address': address,
@@ -273,6 +278,7 @@ class InfoView(LoginRequiredMixin, View):
         }
 
         # 渲染
+
         return render(request, 'user_center_info.html', context)
 
 

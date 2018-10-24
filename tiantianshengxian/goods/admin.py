@@ -1,5 +1,6 @@
 from django.contrib import admin
 from goods.models import *
+from django.core.cache import cache
 
 
 class BaseAdmin(admin.ModelAdmin):
@@ -9,6 +10,7 @@ class BaseAdmin(admin.ModelAdmin):
         from db.tasks import task_generate_static_index
         # 发出任务，让celery 我让可燃重新生成首页静态页
         task_generate_static_index.delay()
+        cache.delete('cache_idnex')
 
     def delete_model(self, request, obj):
         # 删除表中的数据时调用
@@ -16,6 +18,7 @@ class BaseAdmin(admin.ModelAdmin):
 
         super().delete_model(request, obj)
         task_generate_static_index.delay()
+        cache.delete('cache_idnex')
 
 
 class GoodsSKUAdmin(BaseAdmin):
