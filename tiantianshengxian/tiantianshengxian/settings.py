@@ -24,6 +24,8 @@ SECRET_KEY = 'z$u!k_lgkte(=$0dpu*u8ed66n!di371d^7__gullr&v(jskds'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+APPEND_SLASH = True
+
 ALLOWED_HOSTS = []
 
 # Application definition
@@ -37,6 +39,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'user',
     'goods',
+    'haystack',
     'tinymce'
 )
 
@@ -156,3 +159,16 @@ CACHES = {
         'TIMEOUT': 60,
     },
 }
+
+# 配置搜索引擎
+HAYSTACK_CONNECTIONS = {
+    'default': {
+        # 使用whoosh引擎
+        'ENGINE': 'haystack.backends.whoosh_cn_backend.WhooshEngine',
+        # 索引文件路径
+        'PATH': os.path.join(BASE_DIR, 'whoosh_index'),
+    }
+}
+
+# 当添加、修改、删除数据时，自动生成索引
+HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'

@@ -3,10 +3,9 @@ from goods.models import *
 from django.core.cache import cache
 from django.shortcuts import render, redirect
 from django.core.urlresolvers import reverse
-from django.contrib.auth import authenticate
+from django.core.paginator import Paginator
+from django.core.paginator import Paginator
 from redis import StrictRedis
-from django.contrib.auth.models import User
-from user.models import *
 
 
 class IndexView(View):
@@ -106,3 +105,87 @@ class DetailView(View):
 
         # 渲染模板
         return render(request, 'detail.html', content)
+
+
+# 种类id 页码 排序方式
+# /list》type——id种类id&page=页码&sort=排序方式
+# /list/种类id/页码/排序方式
+# /list/种类id/页码？sort=排序方式
+
+class ListView(View):
+    # 列表页
+    def get(self, request, type_id, page):
+        # 显示列表页
+
+        # 获取种类信息
+        try:
+            type = GoodType.objects.get(id=type_id)
+        except GoodType.DoesNotExist:
+            # 种类不存在
+            return redirect(reverse('goods:index'))
+
+        # 获取商品的分类信息
+
+        types = GoodType.objects.all()
+        # 获取商品的排序方式， 获取商品分类的信息
+        # sort=default 按照默认id排序
+        # sort=price 按照价格排序
+        # sort=hot 按照销量排序
+        sort = request.GET.get('sort')
+
+        if sort == 'peice':
+            skus = GoodSKU.objects.filter(type=type).order_by('price')
+        elif sort == 'hot':
+            skus = GoodSKU.objects.filter(type=type).order_by('sales')
+
+        else:
+            sort = 'default'
+            skus = GoodSKU.objects.filter(type=type).order_by('-id')
+
+        # 对数据进行分页
+        paginator = Paginator(skus, 1)
+
+        # 获取页面内容
+        try:
+            page = int(page)
+        except Exception as e:
+            page = 1
+        if page > paginator.num_pages:
+            page = 1
+
+        # 获取低page页的page实例对象
+        skus_page = paginator.page(page)
+
+        # todo:进行页码的控制，页面上面最多显示五个页码
+        # 1 总页数小于5页，页面上面显示所有页码
+        # 2 如果当前页是前三页，显示一到五页
+        # 3 如果当前页是后四页，显示后五页
+        # 4 其他情况，显示当前页的前2页，当前页，当前页的后2页
+        num_pages = paginator.num_pages
+        if num_pages < 5:
+            pages = range(1, num_pages + 1)
+        elif page <= 3:
+            pages = range(1, 6)
+        elif num_pages - page <= 2:
+            pages = range(num_pages - 4, num_pages + 1)
+        else:
+            pages = range(page - 2, page + 3)
+
+        # 获取商品信息
+        new_skus = GoodSKU.objects.filter(type=type).order_by('-create_time')[:2]
+
+        # 获取用户购物车中的商品数目
+        cart_count = 0
+
+        # 组织上下文
+        context = {
+            'type': type,
+            'skus_page': skus_page,
+            'new_skus': new_skus,
+            'cart_count': cart_count,
+            'sort': sort,
+            'pages': pages
+        }
+
+        # 使用模板
+        return render(request, 'list.html', context)
