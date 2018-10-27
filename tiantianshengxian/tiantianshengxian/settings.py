@@ -40,7 +40,8 @@ INSTALLED_APPS = (
     'user',
     'goods',
     'haystack',
-    'tinymce'
+    'tinymce',
+    'order',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -151,6 +152,11 @@ FDFS_CLIENT_CONF = 'my_fdfs/client.conf'
 
 # 设置FastDFS的URL
 FDFS_URL = 'http://192.168.12.197:9999/'
+
+# 配置连接redis对象
+from redis import StrictRedis
+
+REDIS_CONN = StrictRedis('192.168.12.197')
 
 CACHES = {
     "default": {

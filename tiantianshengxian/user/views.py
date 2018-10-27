@@ -1,5 +1,11 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect, render
+from django.http import HttpResponse, HttpResponseRedirect
+# from django.core.urlresolvers import reverse
+# from django.urls import reverse
+# from django.urls import reverse
 import re
+# from django.urls import reverse
+
 from user.models import *
 from django.views.generic import View
 import random
@@ -8,13 +14,14 @@ from django.http import HttpResponse, HttpResponseRedirect, response, cookie, Js
 from itsdangerous import TimedJSONWebSignatureSerializer as Serillizer, SignatureExpired, BadTimeSignature
 from django.core.mail import send_mail
 from  tiantianshengxian import settings
-from django.core.urlresolvers import reverse
 from django.core import serializers
 
 from db.tasks import task_send_mail
 from django.contrib.auth import authenticate, login, logout
 from db.user_util import LoginRequiredMixin
 from redis import StrictRedis
+from order.models import *
+from django.core.paginator import Paginator
 
 
 def index(request):
@@ -146,7 +153,7 @@ class LoginView(View):
                 if url_next:
                     response = redirect(url_next)
                 else:
-                    response = redirect(reverse('user:index'))
+                    response = HttpResponseRedirect(redirect(reverse('user:index')))
 
                 # 判断是否记住用户名
                 remermber = request.POST.get('remember')
@@ -288,22 +295,76 @@ class OrderView(LoginRequiredMixin, View):
     def get(self, request):
         # 获取登录用户对应USER对象
         user = request.user
+        orders = OrderInfo.objects.filter(user=user).order_by(['-create_time'])
 
-        # 获取用户的收货地址
+        # 遍历获取订单商品的信息
+        for order in orders:
+            # 根据order——id差村订单商品信息
+            order_skus = OrderGoods.objects.filter(order_id=order.order_id)
+
+            # 遍历order——skus计算商品的消极
+            for order_sku in order_skus:
+                # 小计计算
+                amount = order_sku.count * order_sku.price
+
+                # 动态给order——sku增加属性amount，保存订单商品的小计
+                order_sku.amount = amount
+
+            # 动态给order增加属性，保存订单商品的信息
+            order.order_skus = order_skus
+
+        # 分页
+        paginator = Paginator(orders, 1)
+        page = 1
+        # 获取第page分页的内容
         try:
-            address = Address.objects.get(user=user, is_default=True)
-        except Address.DoesNotExist:
-            # 不存在默认收货地址
-            address = None
-        # 数据字典
-        context = {
-            'page': '2',
-            'address': address,
+            page = int(page)
+        except Exception as  e:
+            page = 1
+        if page > paginator.num_pages:
+            page = 1
 
-        }
+        # 获取第page页的page实例对象
+        order_page = paginator.page(page)
 
-        # 渲染
-        return render(request, 'user_center_order.html', context)
+        # todo:进行页码的控制，页面上面最多显示五个页码
+        # 1 总页数小于5页，页面上面显示所有页码
+        # 2 如果当前页是前三页，显示一到五页
+        # 3 如果当前页是后四页，显示后五页
+        # 4 其他情况，显示当前页的前2页，当前页，当前页的后2页
+        num_pages = paginator.num_pages
+        if num_pages < 5:
+            pages = range(1, num_pages + 1)
+        elif page <= 3:
+            pages = range(1, 6)
+        elif num_pages - page <= 2:
+            pages = range(num_pages - 4, num_pages + 1)
+        else:
+            pages = range(page - 2, page + 3)
+
+        # 组织上下文
+        context = {'order_page': order_page,
+                   'pages': pages,
+
+                   }
+        return render(request, 'user_center.html', context)
+
+        # # 获取用户的收货地址
+        # try:
+        #     address = Address.objects.get(user=user, is_default=True)
+        # except Address.DoesNotExist:
+        #     # 不存在默认收货地址
+        #     address = None
+        # # 数据字典
+        # context = {
+        #     'page': '2',
+        #     'address': address,
+        #
+        # }
+        #
+        # # 渲染
+        # return render(request, 'user_center_order.html', context)
+        #
 
 
 class AddressView(LoginRequiredMixin, View):
@@ -373,7 +434,9 @@ class AddressView(LoginRequiredMixin, View):
         )
 
         # 返回应答，刷新地址页面
-        return redirect(reverse('user:address'))  # get请求方式
+        # return redirect(reverse('user:address'))  # get请求方式
+
+        return HttpResponseRedirect(reverse('user:address'))
 
 
 def checkusername(request):
@@ -395,7 +458,7 @@ class LogoutView(View):
     def get(self, request):
         # 清除session
         request.session.flush()
-        return redirect(reverse("user:index"))
+        return HttpResponseRedirect(reverse('user:index'))
 
 
 # 三级联动

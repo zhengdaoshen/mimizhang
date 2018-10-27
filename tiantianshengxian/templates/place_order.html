@@ -2,6 +2,7 @@
         "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
+    {% load static %} }}
     <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
     <title>天天生鲜-提交订单</title>
     <link rel="stylesheet" type="text/css" href="/static/css/reset.css">
@@ -81,38 +82,31 @@
         <li class="col04">数量</li>
         <li class="col05">小计</li>
     </ul>
-    <ul class="goods_list_td clearfix">
-        <li class="col01">1</li>
-        <li class="col02"><img src="/static/images/goods/goods012.jpg"></li>
-        <li class="col03">奇异果</li>
-        <li class="col04">500g</li>
-        <li class="col05">25.80元</li>
-        <li class="col06">1</li>
-        <li class="col07">25.80元</li>
-    </ul>
-    <ul class="goods_list_td clearfix">
-        <li class="col01">2</li>
-        <li class="col02"><img src="/static/images/goods/goods003.jpg"></li>
-        <li class="col03">大兴大棚草莓</li>
-        <li class="col04">500g</li>
-        <li class="col05">16.80元</li>
-        <li class="col06">1</li>
-        <li class="col07">16.80元</li>
-    </ul>
+    {% for sku in skus %}
+        <ul class="goods_list_td clearfix">
+            <li class="col01">{{ forloop.counter }}</li>
+            <li class="col02"><img src="{{ sku.image.url }}"></li>
+            <li class="col03">{{ sku.name }}</li>
+            <li class="col04">{{ sku.unice }}</li>
+            <li class="col05">{{ sku.price }}</li>
+            <li class="col06">{{ sku.count }}</li>
+            <li class="col07">{{ sku.amount }}元</li>
+        </ul>
+    {% endfor %}
 </div>
 
 <h3 class="common_title">总金额结算</h3>
 
 <div class="common_list_con clearfix">
     <div class="settle_con">
-        <div class="total_goods_count">共<em>2</em>件商品，总金额<b>42.60元</b></div>
-        <div class="transit">运费：<b>10元</b></div>
-        <div class="total_pay">实付款：<b>52.60元</b></div>
+        <div class="total_goods_count">共<em>{{ total_count }}</em>件商品，总金额<b>{{ total_price }}元</b></div>
+        <div class="transit">运费：<b>{{ transit_peice }}元</b></div>
+        <div class="total_pay">实付款：<b>{{ total_pay }}元</b></div>
     </div>
 </div>
 
 <div class="order_submit clearfix">
-    <a href="javascript:;" id="order_btn">提交订单</a>
+    <a href="" sku_ids="{{ sku_ids }}" id="order_btn">提交订单</a>
 </div>
 
 <div class="footer">
@@ -136,20 +130,37 @@
 
     <div class="mask"></div>
 </div>
-<script type="text/javascript" src="/static/js/jquery-1.12.2.js"></script>
+<script type="text/javascript" src="/static/js/jquery-1.12.4.min.js"></script>
 <script type="text/javascript">
     $('#order_btn').click(function () {
-        localStorage.setItem('order_finish', 2);
+        //获取用户选择的地址ID，支付方式，要购买的商品id字符串
+        addr_id = $('.input[name="addr_id"]:checked').val()
+        pay_method = $('.input[name="pay_style"]:checked').val()
+        sku_ids = $(this).attr('sku_ids')
+        csrf = $('input[name="csrfmiddlewaretoken"]').val()
+        //alert(addr_id+":"+pay_method+":"+sku_ids)
+        //组织参数
+        params = {
+            'addr_id': addr_id,
+            'pay_method': pay_method,
+            'sku_ids': sku_ids,
+            'csrf': csrf
+        }
+        //发起ajax post请求，访问/order/commit,传递的参数:addr_id,pay_method,sku_ids
+        $.post('{%  url 'order:commit' %}', params, function (data) {
+            if (data.res == 5) {
+                //创建成功
+                alert(data.message)
+                window.location.href = '{% url "user:order" 1 %}'
 
-        $('.popup_con').fadeIn('fast', function () {
-
-            setTimeout(function () {
-                $('.popup_con').fadeOut('fast', function () {
-                    window.location.href = 'index.html';
-                });
-            }, 3000)
-
-        });
+            }
+            else {
+                //创建失败
+                alert(data.errmsg)
+            }
+        })
+        //a标签不跳转
+        return false
     });
 </script>
 </body>

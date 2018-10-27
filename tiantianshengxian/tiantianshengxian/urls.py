@@ -20,7 +20,9 @@ urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
     url(r'^', include('user.urls', namespace='user')),
     url(r'good/', include('goods.urls', namespace='goods')),
+    url(r'cart/', include('cart.urls', namespace='cart')),
+    url(r'order/', include('order.urls', namespace='order')),
 
-    url(r'tinymce/', include('tinymce.urls', namespace='user')),
+    url(r'tinymce/', include('tinymce.urls', namespace='tinymce')),
     url(r'^search/', include('haystack.urls')),
 ]

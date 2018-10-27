@@ -1,11 +1,15 @@
+# from django.urls import reverse
 from django.views.generic import View
 from goods.models import *
 from django.core.cache import cache
-from django.shortcuts import render, redirect
-from django.core.urlresolvers import reverse
-from django.core.paginator import Paginator
+from django.shortcuts import render
+from django.shortcuts import redirect
+# from django.core.urlresolvers import reverse
+# from django.urls import reverse
 from django.core.paginator import Paginator
 from redis import StrictRedis
+from cart.views import get_cart_count
+from django.http import HttpResponse, HttpResponseRedirect
 
 
 class IndexView(View):
@@ -36,19 +40,18 @@ class IndexView(View):
                 type.image_banners = image_banners
                 type.title_banners = title_banners
 
+            # 获取用户的购物车中的商品数目
+            cart_count = get_cart_count(request.user)
+
             # 组织莫阿坝你上下文
             context = {
                 'types': types,
                 'goods_banners': goods_banners,
                 'promotion_banners': promotion_banners,
-                'cart_count': 0
+                'cart_count': cart_count
             }
 
             cache.set('cache_index', context, 3600 * 24 * 7)
-
-        # 获取用户的购物车中的商品数目
-        cart_count = 0
-        context.update(cart_count=cart_count)
 
         # 渲染模板
 
@@ -60,11 +63,12 @@ class DetailView(View):
     def get(self, request, goods_id):
         try:
             sku = GoodSKU.objects.get(id=goods_id)
+            print(sku.id)
 
         except GoodSKU.DoesNotExist:
             # 商品不存在
 
-            return redirect(reverse('goods:index'))
+            return HttpResponseRedirect(reverse('goods:index'))
         # 获取商品的分类信息
         types = GoodType.objects.all()
 
@@ -92,15 +96,16 @@ class DetailView(View):
             coon.lpush(history_key, 0, goods_id)
             # 只保存用户最新浏览的五条信息
             coon.ltrim(history_key, 0, 4)
-        # 获取用户购物车中的商品数目
+        # 获取用户的购物车中的商品数目
+        cart_count = get_cart_count(request.user)
 
-        cart_count = 0
         # 组织上下文
         content = {
             'sku': sku,
             'types': types,
             'new_skus': new_skus,
-            'cart_count': cart_count
+            'cart_count': cart_count,
+            'same_spu_skus': same_spu_skus
         }
 
         # 渲染模板
@@ -122,7 +127,7 @@ class ListView(View):
             type = GoodType.objects.get(id=type_id)
         except GoodType.DoesNotExist:
             # 种类不存在
-            return redirect(reverse('goods:index'))
+            return HttpResponseRedirect(reverse('goods:index'))
 
         # 获取商品的分类信息
 
@@ -174,8 +179,8 @@ class ListView(View):
         # 获取商品信息
         new_skus = GoodSKU.objects.filter(type=type).order_by('-create_time')[:2]
 
-        # 获取用户购物车中的商品数目
-        cart_count = 0
+        # 获取用户的购物车中的商品数目
+        cart_count = get_cart_count(request.user)
 
         # 组织上下文
         context = {
