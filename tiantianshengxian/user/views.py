@@ -1,6 +1,6 @@
 from django.shortcuts import redirect, render
 from django.http import HttpResponse, HttpResponseRedirect
-# from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse
 # from django.urls import reverse
 # from django.urls import reverse
 import re
@@ -286,7 +286,7 @@ class InfoView(LoginRequiredMixin, View):
 
         # 渲染
 
-        return render(request, 'user_center_info.html', context)
+        return HttpResponseRedirect(reverse("user_center_site.html"), context)
 
 
 class OrderView(LoginRequiredMixin, View):
